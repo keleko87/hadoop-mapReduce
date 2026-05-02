@@ -73,9 +73,8 @@ services:
       - resourcemanager
     environment:
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-      # No inyectar YARN vía YARN_CONF_*: yarn-site completo en cluster-conf/nodemanager/
       - MULTIHOMED_NETWORK=0
-      # Refuerzo en servidor YARN para evitar "Could not find ... MRAppMaster"
+      # Refuerzo en servidor YARN para evitar errores
       - MAPRED_CONF_mapreduce_framework_name=yarn
       - MAPRED_CONF_yarn_app_mapreduce_am_env=HADOOP_MAPRED_HOME=/opt/hadoop-3.2.1,HADOOP_COMMON_HOME=/opt/hadoop-3.2.1,HADOOP_HDFS_HOME=/opt/hadoop-3.2.1,HADOOP_YARN_HOME=/opt/hadoop-3.2.1,HADOOP_CONF_DIR=/etc/hadoop,JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
       - MAPRED_CONF_mapreduce_map_env=HADOOP_MAPRED_HOME=/opt/hadoop-3.2.1,HADOOP_CONF_DIR=/etc/hadoop,JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
@@ -85,7 +84,7 @@ services:
     ports:
       - "8042:8042"
     volumes:
-      - ./cluster-conf/nodemanager/yarn-site.xml:/etc/hadoop/yarn-site.xml:ro
+      - ./cluster-conf/hadoop-client/yarn-site.xml:/etc/hadoop/yarn-site.xml:ro
     networks:
       - bigdata
 
