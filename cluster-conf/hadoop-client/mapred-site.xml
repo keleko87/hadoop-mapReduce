@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+  <property>
+    <name>mapreduce.framework.name</name>
+    <value>yarn</value>
+  </property>
+  <property>
+    <name>mapreduce.jobhistory.address</name>
+    <value>resourcemanager:10020</value>
+  </property>
+  <!-- Classpath explícito en NMs bde2020 (Hadoop 3.2.1); evita que falle MRAppMaster si HADOOP_MAPRED_HOME no se expande en el launcher -->
+  <property>
+    <name>mapreduce.application.classpath</name>
+    <value>/opt/hadoop-3.2.1/share/hadoop/mapreduce/*,/opt/hadoop-3.2.1/share/hadoop/mapreduce/lib/*,/opt/hadoop-3.2.1/share/hadoop/common/*,/opt/hadoop-3.2.1/share/hadoop/common/lib/*,/opt/hadoop-3.2.1/share/hadoop/yarn/*,/opt/hadoop-3.2.1/share/hadoop/yarn/lib/*,/opt/hadoop-3.2.1/share/hadoop/hdfs/*,/opt/hadoop-3.2.1/share/hadoop/hdfs/lib/*</value>
+  </property>
+  <!-- Mismo layout que en imagen bde2020 nodemanager -->
+  <property>
+    <name>yarn.app.mapreduce.am.env</name>
+    <value>HADOOP_MAPRED_HOME=/opt/hadoop-3.2.1 HADOOP_COMMON_HOME=/opt/hadoop-3.2.1 HADOOP_HDFS_HOME=/opt/hadoop-3.2.1 HADOOP_YARN_HOME=/opt/hadoop-3.2.1 HADOOP_CONF_DIR=/etc/hadoop JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64</value>
+  </property>
+  <property>
+    <name>mapreduce.map.env</name>
+    <value>HADOOP_MAPRED_HOME=/opt/hadoop-3.2.1 HADOOP_CONF_DIR=/etc/hadoop JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64</value>
+  </property>
+  <property>
+    <name>mapreduce.reduce.env</name>
+    <value>HADOOP_MAPRED_HOME=/opt/hadoop-3.2.1 HADOOP_CONF_DIR=/etc/hadoop JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64</value>
+  </property>
+</configuration>

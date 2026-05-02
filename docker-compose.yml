@@ -9,7 +9,7 @@ services:
       - CLUSTER_NAME=bigdata-cluster
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
     ports:
-      - "9870:9870"
+      - "9870:9870" ## Interfaz web del NameNode
       - "9000:9000"
     volumes:
       - namenode_data:/hadoop/dfs/name
@@ -27,7 +27,7 @@ services:
       - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
       - SERVICE_PRECONDITION=namenode:9870 namenode:9000
     ports:
-      - "8088:8088"
+      - "8088:8088" ## Interfaz web de YARN - ResourceManager
       - "8032:8032"
     networks:
       - bigdata
@@ -73,10 +73,58 @@ services:
       - resourcemanager
     environment:
       - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
-      - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
+      # No inyectar YARN vía YARN_CONF_*: yarn-site completo en cluster-conf/nodemanager/
+      - MULTIHOMED_NETWORK=0
+      # Refuerzo en servidor YARN para evitar "Could not find ... MRAppMaster"
+      - MAPRED_CONF_mapreduce_framework_name=yarn
+      - MAPRED_CONF_yarn_app_mapreduce_am_env=HADOOP_MAPRED_HOME=/opt/hadoop-3.2.1,HADOOP_COMMON_HOME=/opt/hadoop-3.2.1,HADOOP_HDFS_HOME=/opt/hadoop-3.2.1,HADOOP_YARN_HOME=/opt/hadoop-3.2.1,HADOOP_CONF_DIR=/etc/hadoop,JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+      - MAPRED_CONF_mapreduce_map_env=HADOOP_MAPRED_HOME=/opt/hadoop-3.2.1,HADOOP_CONF_DIR=/etc/hadoop,JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+      - MAPRED_CONF_mapreduce_reduce_env=HADOOP_MAPRED_HOME=/opt/hadoop-3.2.1,HADOOP_CONF_DIR=/etc/hadoop,JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+      - MAPRED_CONF_mapreduce_application_classpath=/opt/hadoop-3.2.1/share/hadoop/mapreduce/*,/opt/hadoop-3.2.1/share/hadoop/mapreduce/lib/*,/opt/hadoop-3.2.1/share/hadoop/common/*,/opt/hadoop-3.2.1/share/hadoop/common/lib/*,/opt/hadoop-3.2.1/share/hadoop/yarn/*,/opt/hadoop-3.2.1/share/hadoop/yarn/lib/*,/opt/hadoop-3.2.1/share/hadoop/hdfs/*,/opt/hadoop-3.2.1/share/hadoop/hdfs/lib/*
       - SERVICE_PRECONDITION=namenode:9870 resourcemanager:8088
     ports:
       - "8042:8042"
+    volumes:
+      - ./cluster-conf/nodemanager/yarn-site.xml:/etc/hadoop/yarn-site.xml:ro
+    networks:
+      - bigdata
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    hostname: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=testdb
+      - MYSQL_USER=sqoop
+      - MYSQL_PASSWORD=sqoop
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      #- ./tabla-personas.sql:/docker-entrypoint-initdb.d/01-personas.sql:ro
+    networks:
+      - bigdata
+
+  sqoop:
+    build:
+      context: ./sqoop
+    container_name: sqoop
+    hostname: sqoop
+    depends_on:
+      - namenode
+      - resourcemanager
+      - mysql
+    environment:
+      - HADOOP_HOME=/usr/local/hadoop
+      - HADOOP_CONF_DIR=/usr/local/hadoop/etc/hadoop
+      - YARN_CONF_DIR=/usr/local/hadoop/etc/hadoop
+      - SQOOP_HOME=/usr/local/sqoop
+    volumes:
+      # Cliente Hadoop (compartible con otros contenedores CLI); no es configuración de Sqoop
+      - ./cluster-conf/hadoop-client/core-site.xml:/usr/local/hadoop/etc/hadoop/core-site.xml:ro
+      - ./cluster-conf/hadoop-client/mapred-site.xml:/usr/local/hadoop/etc/hadoop/mapred-site.xml:ro
+      - ./cluster-conf/hadoop-client/yarn-site.xml:/usr/local/hadoop/etc/hadoop/yarn-site.xml:ro
     networks:
       - bigdata
 
@@ -113,5 +161,6 @@ volumes:
   namenode_data:
   datanode1_data:
   datanode2_data:
+  mysql_data:
   prometheus_data:
   grafana_data:
