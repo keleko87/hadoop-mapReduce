@@ -127,6 +127,22 @@ services:
     networks:
       - bigdata
 
+  hive-metastore-db:
+    image: postgres:12
+    container_name: hive-metastore-db
+    environment:
+      - POSTGRES_DB=metastore
+      - POSTGRES_USER=hive
+      - POSTGRES_PASSWORD=hive
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hive -d metastore"]
+      interval: 5s
+      retries: 5
+    networks:
+      - bigdata
+
   hive-metastore:
     image: bde2020/hive:2.3.2-postgresql-metastore
     container_name: hive-metastore
@@ -161,22 +177,6 @@ services:
     ports:
       - "10000:10000" # Puerto para Beeline / JDBC
       - "10002:10002" # Interfaz web de Hive
-    networks:
-      - bigdata
-
-  metastore-db:
-    image: postgres:12
-    container_name: metastore-db
-    environment:
-      - POSTGRES_DB=metastore
-      - POSTGRES_USER=hive
-      - POSTGRES_PASSWORD=hive
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hive -d metastore"]
-      interval: 5s
-      retries: 5
     networks:
       - bigdata
 
