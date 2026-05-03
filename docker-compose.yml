@@ -127,6 +127,59 @@ services:
     networks:
       - bigdata
 
+  hive-metastore:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-metastore
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - HIVE_SITE_CONF_javax_jdo_option_ConnectionURL=jdbc:postgresql://hive-metastore-db:5432/metastore
+      - HIVE_SITE_CONF_javax_jdo_option_ConnectionDriverName=org.postgresql.Driver
+      - HIVE_SITE_CONF_javax_jdo_option_ConnectionUserName=hive
+      - HIVE_SITE_CONF_javax_jdo_option_ConnectionPassword=hive
+      # - HIVE_SITE_CONF_datanucleus_schema_autoCreateAll=true
+      # - HIVE_SITE_CONF_hive_metastore_schema_verification=false
+      - SERVICE_NAME=metastore 
+    # Añadimos el script para ejecutar el binario de hive para que levante el servicio Thrift
+    volumes:
+      - ./start-metastore.sh:/start-metastore.sh
+    command: ["/bin/bash", "/start-metastore.sh"]
+    ports:
+      - "9083:9083" # Exponemos el puerto Thrift
+    networks:
+      - bigdata
+
+  hive-server:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hive-server
+    depends_on:
+      - hive-metastore
+    environment:
+      - SERVICE_NAME=hiveserver2
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:9000
+      - HIVE_SITE_CONF_hive_metastore_uris=thrift://hive-metastore:9083
+      - SERVICE_PRECONDITION=hive-metastore:9083
+    ports:
+      - "10000:10000" # Puerto para Beeline / JDBC
+      - "10002:10002" # Interfaz web de Hive
+    networks:
+      - bigdata
+
+  metastore-db:
+    image: postgres:12
+    container_name: metastore-db
+    environment:
+      - POSTGRES_DB=metastore
+      - POSTGRES_USER=hive
+      - POSTGRES_PASSWORD=hive
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hive -d metastore"]
+      interval: 5s
+      retries: 5
+    networks:
+      - bigdata
+
   prometheus:
     image: prom/prometheus:v2.53.0
     container_name: prometheus
